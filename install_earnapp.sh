@@ -37,7 +37,12 @@ export NODE_EXTRA_CA_CERTS="/etc/ssl/certs/ca-certificates.crt"
 
 echo "==> [3/4] Download & jalankan installer EarnApp..."
 wget -qO /tmp/earnapp.sh https://brightdata.com/static/earnapp/install.sh
-bash /tmp/earnapp.sh
+
+# Installer resmi minta konfirmasi interaktif ("yes") untuk menyetujui terms.
+# Saat script ini dijalankan lewat `curl | sudo bash`, stdin sudah dipakai oleh
+# pipe curl sehingga installer tidak bisa membaca input dari terminal.
+# Solusinya: sediakan jawaban "yes" otomatis lewat `yes "yes"`.
+yes "yes" | bash /tmp/earnapp.sh
 
 echo "==> [4/4] Pastikan device ter-register (kalau installer belum otomatis sukses)..."
 if ! earnapp status 2>/dev/null | grep -qi "enabled"; then
