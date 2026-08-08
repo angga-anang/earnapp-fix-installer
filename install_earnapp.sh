@@ -51,7 +51,11 @@ export NODE_EXTRA_CA_CERTS="/etc/ssl/certs/ca-certificates.crt"
 echo "==> [3/5] Download & jalankan installer EarnApp..."
 wget -qO /tmp/earnapp.sh https://brightdata.com/static/earnapp/install.sh
 
-INSTALL_LOG="/tmp/earnapp_install_output.log"
+# PENTING: jangan pakai nama file yang diawali "earnapp_" di /tmp -- installer
+# resmi punya langkah "Cleaning up..." yang menghapus file /tmp/earnapp_* miliknya
+# sendiri, dan itu bisa ikut menghapus log kita di tengah proses kalau nama filenya
+# cocok dengan pola itu. Pakai lokasi & nama yang jelas berbeda.
+INSTALL_LOG="/var/tmp/eafix_install_log_$$.txt"
 
 # Installer resmi minta konfirmasi interaktif ("yes") untuk menyetujui terms,
 # dibaca langsung dari /dev/tty. Pakai `expect` untuk bikin PTY asli supaya
@@ -130,3 +134,5 @@ echo "Device ID : ${DEVICE_UUID:-$(earnapp showid 2>/dev/null)}"
 echo ""
 echo "Buka link berikut di browser untuk verifikasi (hard refresh Ctrl+Shift+R kalau perlu):"
 echo "  https://earnapp.com/r/${DEVICE_UUID:-$(earnapp showid 2>/dev/null)}"
+
+rm -f "$INSTALL_LOG" 2>/dev/null || true
