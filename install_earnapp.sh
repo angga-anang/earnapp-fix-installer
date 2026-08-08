@@ -104,10 +104,16 @@ if grep -q "SELF_SIGNED_CERT_IN_CHAIN\|Failed registration" "$INSTALL_LOG"; then
   OS_ENC="$(echo "$OS_STR" | sed 's/\//%2F/g; s/ /+/g')"
 
   if [[ -n "$DEVICE_UUID" && -n "$SERIAL" ]]; then
-    RESP="$(curl -s -X POST \
-      "https://client.earnapp.com/install_device?uuid=${DEVICE_UUID}&version=${VERSION:-unknown}&arch=${ARCH:-x64}&appid=node_earnapp.com&os=${OS_ENC}" \
+    REG_URL="https://client.earnapp.com/install_device?uuid=${DEVICE_UUID}&version=${VERSION:-unknown}&arch=${ARCH:-x64}&appid=node_earnapp.com&os=${OS_ENC}"
+    echo "    Debug - URL registrasi: $REG_URL"
+    echo "    Debug - serial: $SERIAL"
+
+    RESP="$(curl -sS -X POST \
+      "$REG_URL" \
       -H "Content-Type: application/json" \
-      -d "{\"serial\":\"${SERIAL}\"}")"
+      -d "{\"serial\":\"${SERIAL}\"}" 2>&1)"
+    CURL_EXIT=$?
+    echo "    Debug - curl exit code: $CURL_EXIT"
 
     if echo "$RESP" | grep -q '"ok":1'; then
       echo "    OK - Registrasi manual berhasil: $RESP"
