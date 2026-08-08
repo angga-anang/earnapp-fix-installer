@@ -39,10 +39,30 @@ echo "==> [3/4] Download & jalankan installer EarnApp..."
 wget -qO /tmp/earnapp.sh https://brightdata.com/static/earnapp/install.sh
 
 # Installer resmi minta konfirmasi interaktif ("yes") untuk menyetujui terms.
-# Saat script ini dijalankan lewat `curl | sudo bash`, stdin sudah dipakai oleh
-# pipe curl sehingga installer tidak bisa membaca input dari terminal.
-# Solusinya: sediakan jawaban "yes" otomatis lewat `yes "yes"`.
-yes "yes" | bash /tmp/earnapp.sh
+# Prompt ini dibaca LANGSUNG dari /dev/tty (bukan stdin biasa), supaya tetap
+# berfungsi walau script-nya sendiri dijalankan lewat pipe (`curl | bash`).
+# Efek sampingnya: trik umum `yes | bash script.sh` TIDAK mempan, karena stdin
+# yang di-pipe tidak pernah dibaca oleh prompt-nya.
+#
+# Solusinya: pakai `expect` untuk membuat pseudo-terminal (PTY) asli, supaya
+# /dev/tty di dalam installer terhubung ke situ dan bisa "diisi" otomatis.
+if ! command -v expect >/dev/null 2>&1; then
+  apt-get install -y expect -qq
+fi
+
+expect -c '
+  set timeout 120
+  spawn bash /tmp/earnapp.sh
+  expect {
+    -re {[Ww]rite .?yes.? to continue} {
+      send "yes\r"
+      exp_continue
+    }
+    eof
+  }
+  catch wait result
+  exit [lindex $result 3]
+'
 
 echo "==> [4/4] Pastikan device ter-register (kalau installer belum otomatis sukses)..."
 if ! earnapp status 2>/dev/null | grep -qi "enabled"; then
