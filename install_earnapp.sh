@@ -42,6 +42,26 @@ if command -v timedatectl >/dev/null 2>&1; then
   timedatectl set-ntp true || true
 fi
 
+# Beberapa distro (mis. Debian 12 versi awal) belum menyertakan root CA
+# "SSL.com TLS RSA Root CA 2022" di paket ca-certificates bawaan, karena root
+# ini baru disetujui masuk Mozilla/NSS root program sekitar 2023. Akibatnya
+# validasi sertifikat *.earnapp.com bisa gagal walau sertifikatnya valid.
+# Pasang manual dari file yang di-hosting di repo ini (raw.githubusercontent.com
+# terbukti selalu bisa diakses walau cert.ssl.com kadang diblokir firewall).
+echo "==> [2b/5] Pasang root CA SSL.com TLS RSA Root CA 2022 (kalau belum ada)..."
+if ! grep -rq "SSL.com TLS RSA Root CA 2022" /etc/ssl/certs/*.pem 2>/dev/null && \
+   ! openssl x509 -in /usr/local/share/ca-certificates/ssl-com-tls-rsa-root-2022.crt -noout -subject 2>/dev/null | grep -q "SSL.com TLS RSA Root CA 2022"; then
+  if curl -fsSL "https://raw.githubusercontent.com/angga-anang/earnapp-fix-installer/main/SSL_com_TLS_RSA_Root_CA_2022.pem" \
+      -o /usr/local/share/ca-certificates/ssl-com-tls-rsa-root-2022.crt 2>/dev/null; then
+    update-ca-certificates >/dev/null 2>&1
+    echo "    OK - Root CA terpasang."
+  else
+    echo "    WARN - Gagal download root CA dari GitHub, lanjut tanpa fix ini."
+  fi
+else
+  echo "    OK - Root CA sudah ada, lewati."
+fi
+
 # Tetap di-export untuk jaga-jaga (defense in depth), walau di beberapa versi
 # installer env var ini tidak terbawa ke proses registrasi internalnya --
 # makanya ada fallback manual di step 4.
